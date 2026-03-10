@@ -100,14 +100,14 @@ def setup_chrome(install_dir="C:/Users/qgoens/dev/chrome-portable"):
         return None, None
 
 
-def click_summary_button(headless=True, wait_time=20, chrome_binary=None, chromedriver_path=None):
+def click_summary_button(headless=True, wait_time=60, chrome_binary=None, chromedriver_path=None):
     """
     Clicks the Summary button in the Connectivity App iframe.
 
     Args:
         headless (bool): If True, runs browser in headless mode (no GUI).
                         If False, shows the browser window. Default is True.
-        wait_time (int): Maximum time to wait for elements to load (seconds). Default is 20.
+        wait_time (int): Maximum time to wait for elements to load (seconds). Default is 60.
         chrome_binary (str): Path to Chrome executable. If None, uses system Chrome.
         chromedriver_path (str): Path to ChromeDriver executable. If None, uses system ChromeDriver.
 
@@ -145,12 +145,33 @@ def click_summary_button(headless=True, wait_time=20, chrome_binary=None, chrome
         print(f"Navigating to {url}")
         driver.get(url)
 
+        # Wait for page to be fully loaded
+        print("Waiting for page to load...")
+        wait = WebDriverWait(driver, wait_time)
+        wait.until(lambda d: d.execute_script('return document.readyState') == 'complete')
+        print("Page loaded successfully")
+
+        # Give the page a moment to initialize any dynamic content
+        time.sleep(2)
+
         # Wait for the iframe to be present
         print("Waiting for iframe to load...")
-        wait = WebDriverWait(driver, wait_time)
-        iframe = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="ConnectivityApp"]'))
-        )
+        print('Looking for iframe with selector: iframe[src*="ConnectivityApp"]')
+
+        try:
+            iframe = wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'iframe[src*="ConnectivityApp"]'))
+            )
+            print(f"✓ Found iframe: {iframe.get_attribute('src')}")
+        except TimeoutException:
+            # If we can't find the iframe, let's see what iframes ARE on the page
+            print("Could not find ConnectivityApp iframe. Checking all iframes on page...")
+            iframes = driver.find_elements(By.TAG_NAME, 'iframe')
+            print(f"Found {len(iframes)} iframe(s) on the page:")
+            for i, frame in enumerate(iframes):
+                src = frame.get_attribute('src') or '(no src)'
+                print(f"  {i+1}. {src}")
+            raise
 
         # Switch to the iframe
         print("Switching to iframe...")
@@ -233,8 +254,8 @@ if __name__ == "__main__":
                         help='Run in headless mode (default: True)')
     parser.add_argument('--show-browser', action='store_true',
                         help='Show the browser window (sets headless to False)')
-    parser.add_argument('--wait-time', type=int, default=20,
-                        help='Maximum wait time in seconds (default: 20)')
+    parser.add_argument('--wait-time', type=int, default=60,
+                        help='Maximum wait time in seconds (default: 60)')
     parser.add_argument('--setup', action='store_true',
                         help='Download and setup portable Chrome (run this first)')
     parser.add_argument('--chrome-dir', type=str, default="C:/Users/qgoens/dev/chrome-portable",

@@ -1,0 +1,38 @@
+name: Connectivity Clicker
+
+on:
+  schedule:
+    # Run every hour at minute 0
+    - cron: '0 * * * *'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  click-summary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65  # Allow 65 minutes for the job (hour + buffer)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Install Chrome and ChromeDriver
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Run clicker every 4 minutes for 1 hour
+        run: |
+          python click_runner.py --interval 4 --duration 60
+        env:
+          # GitHub Actions includes Chrome, so we can use system Chrome
+          DISPLAY: ':99'

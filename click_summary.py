@@ -119,13 +119,21 @@ def click_summary_button(headless=True, wait_time=60, chrome_binary=None, chrome
         # Configure Chrome options
         chrome_options = Options()
         if headless:
-            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--headless=new')  # Use new headless mode
             chrome_options.add_argument('--disable-gpu')
 
         # Additional options for stability
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--window-size=1920,1080')
+
+        # Better browser emulation to avoid detection
+        chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option('useAutomationExtension', False)
+
+        # Set a realistic user agent
+        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
         # Use custom Chrome binary if provided
         if chrome_binary:
@@ -139,6 +147,15 @@ def click_summary_button(headless=True, wait_time=60, chrome_binary=None, chrome
             driver = webdriver.Chrome(service=service, options=chrome_options)
         else:
             driver = webdriver.Chrome(options=chrome_options)
+
+        # Remove webdriver property to avoid detection
+        driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+            'source': '''
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                })
+            '''
+        })
 
         # Navigate to the main page
         url = "https://ansperformance.eu/traffic/connectivity/"
@@ -171,6 +188,13 @@ def click_summary_button(headless=True, wait_time=60, chrome_binary=None, chrome
             for i, frame in enumerate(iframes):
                 src = frame.get_attribute('src') or '(no src)'
                 print(f"  {i+1}. {src}")
+
+            # Debug: Print page title and first 2000 chars of HTML to see what we got
+            print(f"\nPage title: {driver.title}")
+            page_source = driver.page_source
+            print(f"\nFirst 2000 characters of page HTML:")
+            print(page_source[:2000])
+            print("\n--- End of HTML snippet ---")
             raise
 
         # Switch to the iframe

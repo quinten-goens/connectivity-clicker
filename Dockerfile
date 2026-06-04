@@ -3,28 +3,16 @@ FROM python:3.11-slim
 # Install Google Chrome (stable). Selenium 4.6+ ships Selenium Manager, which
 # automatically downloads a matching ChromeDriver at runtime, so we only need
 # the browser itself plus its shared-library dependencies here.
+# Install Google Chrome (stable) plus git (needed to pip-install pocketlogpy
+# from its git repo). We let apt resolve Chrome's shared-library dependencies
+# from its own .deb metadata rather than hand-listing them, which keeps this
+# working across Debian releases (package names like libasound2 vs libasound2t64
+# differ between versions).
 RUN apt-get update && apt-get install -y --no-install-recommends \
         wget \
         gnupg \
         git \
         ca-certificates \
-        fonts-liberation \
-        libasound2 \
-        libatk-bridge2.0-0 \
-        libatk1.0-0 \
-        libatspi2.0-0 \
-        libcups2 \
-        libdbus-1-3 \
-        libdrm2 \
-        libgbm1 \
-        libgtk-3-0 \
-        libnspr4 \
-        libnss3 \
-        libxcomposite1 \
-        libxdamage1 \
-        libxfixes3 \
-        libxkbcommon0 \
-        libxrandr2 \
     && wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
     && apt-get install -y --no-install-recommends /tmp/chrome.deb \
     && rm -f /tmp/chrome.deb \

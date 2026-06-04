@@ -33,8 +33,8 @@ COPY click_summary.py click_runner.py ./
 # click_summary.py falls back to system Chrome/Chromium when the portable
 # Windows paths are absent, which is exactly what we want inside the container.
 #
-# Each container run performs a single click and exits. Schedule the run in
-# Dokploy (recommended: every 4 minutes, matching the existing GitHub Actions
-# cadence). To instead self-loop within one long-lived run, override CMD with
-# e.g. `python click_runner.py --interval 4 --duration 60`.
-CMD ["python", "click_summary.py", "--headless"]
+# The container stays running idle so that a Dokploy schedule can `docker exec`
+# the click into it on an interval (recommended: every 4 minutes), e.g.:
+#   docker exec <container> python /app/click_summary.py --headless
+# Each exec performs one click and returns its exit status to the scheduler.
+CMD ["sleep", "infinity"]

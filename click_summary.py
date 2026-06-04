@@ -16,6 +16,54 @@ import json
 from pathlib import Path
 
 
+# Flow registered manually in PocketBase; see https://github.com/euctrl-pru/pocketlogpy
+POCKETLOG_FLOW = "connectivity_clicker"
+POCKETLOG_LOG_TYPE = "CLICK_ATTEMPT"
+
+
+def log_click_result(success, message=None, metadata=None):
+    """
+    Best-effort log of the click outcome to PocketLog (PocketBase).
+
+    Logs SUCCESS when the click succeeded and ERROR when it failed. Logging
+    never raises: if pocketlogpy is not installed or the credentials/connection
+    are missing, a warning is printed and the click result is unaffected.
+
+    Credentials are read from the POCKETLOG_URL / POCKETLOG_EMAIL /
+    POCKETLOG_PASSWORD environment variables.
+
+    Args:
+        success (bool): Whether the Summary button click succeeded.
+        message (str): Optional human-readable message.
+        metadata (dict): Optional extra data attached to the log entry.
+    """
+    try:
+        from pocketlogpy import PocketLog
+    except ImportError:
+        print("⚠ pocketlogpy not installed; skipping PocketLog logging")
+        return
+
+    try:
+        pl = PocketLog()  # reads POCKETLOG_* env vars
+        if success:
+            pl.success(
+                POCKETLOG_FLOW,
+                log_type=POCKETLOG_LOG_TYPE,
+                message=message or "Summary button clicked successfully",
+                metadata=metadata,
+            )
+        else:
+            pl.error(
+                POCKETLOG_FLOW,
+                log_type=POCKETLOG_LOG_TYPE,
+                message=message or "Failed to click Summary button",
+                metadata=metadata,
+            )
+        print(f"✓ Logged {'SUCCESS' if success else 'ERROR'} to PocketLog")
+    except Exception as e:
+        print(f"⚠ PocketLog logging failed (ignored): {e}")
+
+
 def setup_chrome(install_dir="C:/Users/qgoens/dev/chrome-portable"):
     """
     Downloads and sets up a portable Chrome for Testing and ChromeDriver.
@@ -322,4 +370,8 @@ if __name__ == "__main__":
         chrome_binary=str(chrome_binary) if chrome_binary else None,
         chromedriver_path=str(chromedriver_path) if chromedriver_path else None
     )
+
+    # Log the outcome to PocketLog (best-effort; never affects exit status).
+    log_click_result(success, metadata={"headless": headless})
+
     exit(0 if success else 1)

@@ -357,9 +357,17 @@ if __name__ == "__main__":
     if not chrome_binary.exists() or not chromedriver_path.exists():
         print("⚠ Portable Chrome not found. Run setup first:")
         print("  python click_summary.py --setup")
-        print("\nAttempting to use system Chrome instead...")
-        chrome_binary = None
-        chromedriver_path = None
+        print("\nAttempting to use system Chrome/Chromium instead...")
+
+        # In the container we install Chromium + chromium-driver and point at
+        # them via CHROME_BIN (and the standard /usr/bin/chromedriver path).
+        # Honour those when present; otherwise fall back to Selenium Manager
+        # (chrome_binary / chromedriver_path = None) for a system Chrome.
+        env_chrome = os.environ.get("CHROME_BIN")
+        chrome_binary = env_chrome if env_chrome and Path(env_chrome).exists() else None
+
+        system_chromedriver = Path("/usr/bin/chromedriver")
+        chromedriver_path = str(system_chromedriver) if system_chromedriver.exists() else None
 
     # If --show-browser is specified, override headless
     headless = not args.show_browser if args.show_browser else args.headless

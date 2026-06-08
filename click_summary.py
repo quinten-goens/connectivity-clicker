@@ -175,6 +175,16 @@ def click_summary_button(headless=True, wait_time=60, chrome_binary=None, chrome
         chrome_options.add_argument('--disable-dev-shm-usage')
         chrome_options.add_argument('--window-size=1920,1080')
 
+        # Extra hardening for running as root inside a minimal container
+        # (Debian Chromium otherwise crashes at startup with SIGTRAP / status -5).
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--disable-software-rasterizer')
+        chrome_options.add_argument('--disable-setuid-sandbox')
+        chrome_options.add_argument('--remote-debugging-port=0')
+        # Give Chromium a writable, unique profile dir; a missing/locked one is
+        # a common cause of the startup crash in containers.
+        chrome_options.add_argument(f'--user-data-dir=/tmp/chrome-profile-{os.getpid()}')
+
         # Better browser emulation to avoid detection
         chrome_options.add_argument('--disable-blink-features=AutomationControlled')
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])

@@ -181,9 +181,16 @@ def click_summary_button(headless=True, wait_time=60, chrome_binary=None, chrome
         chrome_options.add_argument('--disable-software-rasterizer')
         chrome_options.add_argument('--disable-setuid-sandbox')
         chrome_options.add_argument('--remote-debugging-port=0')
-        # Give Chromium a writable, unique profile dir; a missing/locked one is
-        # a common cause of the startup crash in containers.
-        chrome_options.add_argument(f'--user-data-dir=/tmp/chrome-profile-{os.getpid()}')
+        # Give Chromium a writable profile dir; a missing/locked one is a common
+        # cause of the startup crash in containers. Use a single FIXED path so
+        # repeated scheduled runs REUSE it instead of piling up new profiles
+        # (a per-PID path previously filled the disk). Runs are sequential, so
+        # there is no concurrent-lock concern.
+        chrome_options.add_argument('--user-data-dir=/tmp/chrome-profile')
+        # Keep the reused profile from growing unbounded: skip the on-disk HTTP
+        # cache entirely (we load a fresh page each run anyway).
+        chrome_options.add_argument('--disk-cache-size=0')
+        chrome_options.add_argument('--disable-application-cache')
 
         # Better browser emulation to avoid detection
         chrome_options.add_argument('--disable-blink-features=AutomationControlled')

@@ -15,7 +15,7 @@ A Python application that automates clicking the "Summary" button in the iframe 
 1. Create a virtual environment (recommended):
 
 **Windows (PowerShell):**
-```bash
+```bash 
 python -m venv venv
 venv\Scripts\Activate.ps1
 ```
